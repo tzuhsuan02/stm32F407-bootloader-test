@@ -1,0 +1,21 @@
+# Build directories
+Debug/
+Release/
+Listings/
+Objects/
+
+# Build outputs
+*.axf
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.o
+*.d
+
+# Keil user/temp files
+*.uvgui.*
+*.bak
+*.dep
+JLinkLog.txt
