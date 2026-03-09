@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <string.h>
 //#define KEY_ON 1
 //#define KEY_OFF 0
 /* USER CODE END Includes */
@@ -41,6 +42,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
@@ -49,6 +51,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -80,8 +83,76 @@ typedef struct
     uint32_t fw_size;
     uint32_t fw_crc;
 	  uint32_t boot_mode;
+	  uint32_t cmd;
 } boot_flag;
 
+	boot_flag BootFlag={0};
+   //接收缓存
+		uint8_t RxCount=0;
+		uint8_t RxTemp=0;
+		volatile uint8_t F_UART=0;
+		char DataRx[32]={0};
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+//HAL_UART_Receive_IT(&huart1, *pDataRx,10);
+	if(huart->Instance == USART1)
+	{
+		//将接收到的数据全部保存到DataRx中，然后置位F_UART=1以及Flag
+		//当while检测到F_UART=1时，将DataRx数据输出到串口
+		if(RxTemp=='\r'||RxTemp=='\n')
+		{
+		  F_UART=1;
+//	 BootFlag.cmd=1;
+		 DataRx[RxCount]='\0';
+
+		}
+		else
+		{
+		 DataRx[RxCount]=RxTemp;
+		 RxCount++;
+    }
+   		HAL_UART_Receive_IT(&huart1,&RxTemp,1);
+		#if 0
+		//设置接收缓冲区为单缓冲区，串口收到数据后就发送出去
+		//数据不会被保存进DataRx中
+			HAL_UART_Transmit(&huart1,&RxTemp,1,100);
+		  HAL_UART_Receive_IT(&huart1,&RxTemp,1);
+		#endif
+		
+//	switch(pDataRx)
+//	{
+//		case '#':flag=0;break;
+//		case '*':flag=1;break;
+//	}
+	}		
+}
+void Boot_Wait(void)
+	{
+	char DataTx1[100]="BOOT_MODE";
+	char DataTx2[100]="\r\nWait for cmd\r\n";
+
+  HAL_UART_Receive_IT(&huart1,&RxTemp,1);
+		
+		HAL_UART_Transmit(&huart1,(uint8_t*)DataTx1,strlen(DataTx1),100);
+		HAL_UART_Transmit(&huart1,(uint8_t*)DataTx2,strlen(DataTx2),100);
+	 while(1)
+	 {
+	 HAL_GPIO_WritePin(GPIOF,GPIO_PIN_8,GPIO_PIN_RESET);
+		HAL_Delay(200);
+			 HAL_GPIO_WritePin(GPIOF,GPIO_PIN_8,GPIO_PIN_SET);
+		HAL_Delay(200);
+		 
+		if(F_UART==1)
+		{
+		F_UART=0;
+			HAL_UART_Transmit(&huart1,(uint8_t*)DataRx,strlen(DataRx),100);
+			memset(DataRx,0,sizeof(DataRx));
+			RxCount=0;
+			HAL_UART_Transmit(&huart1,(uint8_t*)DataTx2,strlen(DataTx2),100);
+		}
+			 
+	 }
+	}
 void JumpToApplication(void)
 {
     uint32_t app_sp    = *(__IO uint32_t*)APP_ADDRESS;
@@ -111,17 +182,7 @@ void JumpToApplication(void)
     }
 }
 
-  void Boot_Wait(void)
-	{
-	 while(1)
-	 {
-	 HAL_GPIO_WritePin(GPIOF,GPIO_PIN_8,GPIO_PIN_RESET);
-		HAL_Delay(200);
-			 HAL_GPIO_WritePin(GPIOF,GPIO_PIN_8,GPIO_PIN_SET);
-		HAL_Delay(200);
-		 //以后再加命令
-	 }
-	}
+  
 
 /* USER CODE END 0 */
 
@@ -156,6 +217,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -238,6 +300,39 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
 }
 
 /**

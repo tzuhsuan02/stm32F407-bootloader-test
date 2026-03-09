@@ -3,6 +3,7 @@
 "boot1\main.o"
 "boot1\stm32f4xx_it.o"
 "boot1\stm32f4xx_hal_msp.o"
+"boot1\stm32f4xx_hal_uart.o"
 "boot1\stm32f4xx_hal_rcc.o"
 "boot1\stm32f4xx_hal_rcc_ex.o"
 "boot1\stm32f4xx_hal_flash.o"
