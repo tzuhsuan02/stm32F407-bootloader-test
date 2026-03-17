@@ -80,113 +80,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 
-//uint8_t Page_Program(uint32_t Addr,uint8_t *Buff,uint16_t Size)
-//{
-//	uint8_t Reg[2];
-//  uint8_t PageProgram=0x02;
-//	
-//	uint8_t addr[3];
-//	addr[0] = (Addr >> 16) & 0xFF;
-//	addr[1] = (Addr >> 8)  & 0xFF;
-//	addr[2] = (Addr >> 0)  & 0xFF;
-//	
-//	Write_Enable();
-//	SPI_ReadReg(Reg);
-//	
-//	while(!(Reg[1]&WEL))
-//	{
-//	Write_Enable();
-//	SPI_ReadReg(Reg);
-//	}
-//	
-//	HAL_GPIO_WritePin(GPIOG,GPIO_PIN_6,GPIO_PIN_RESET);
-//	
-
-//	HAL_SPI_Transmit(&hspi1, &PageProgram, 1, HAL_MAX_DELAY);
-//	HAL_SPI_Transmit(&hspi1, addr, 3, HAL_MAX_DELAY);
-//	HAL_SPI_Transmit(&hspi1, Buff, Size, HAL_MAX_DELAY);
-//	
-//	HAL_GPIO_WritePin(GPIOG,GPIO_PIN_6,GPIO_PIN_SET);
-//	
-//	SPI_ReadReg(Reg);
-//	while(Reg[1]&BUSY)
-//	{
-//		SPI_ReadReg(Reg);
-//	}
-//	
-//	return 0;
-//}
-
-//uint8_t Erase_Sector(uint32_t Addr)
-//{
-//  uint8_t Reg[2];
-//	const uint8_t SectorErase=0x20;
-//	
-//	uint8_t addr[3];
-//	addr[0] = (Addr >> 16) & 0xFF;
-//	addr[1] = (Addr >> 8)  & 0xFF;
-//	addr[2] = (Addr >> 0)  & 0xFF;
-//	
-//	Write_Enable();
-//	SPI_ReadReg(Reg);
-//	
-//	while(!(Reg[1]&WEL))
-//	{
-//	Write_Enable();
-//	SPI_ReadReg(Reg);
-//	}
-//	
-//	HAL_GPIO_WritePin(GPIOG,GPIO_PIN_6,GPIO_PIN_RESET);
-//	
-
-//	HAL_SPI_Transmit(&hspi1, &SectorErase, 1, HAL_MAX_DELAY);
-//	HAL_SPI_Transmit(&hspi1, addr, 3, HAL_MAX_DELAY);
-//	
-//	HAL_GPIO_WritePin(GPIOG,GPIO_PIN_6,GPIO_PIN_SET);
-//	
-//	SPI_ReadReg(Reg);
-//	while(Reg[1]&BUSY)
-//	{
-//		SPI_ReadReg(Reg);
-//	}
-//	
-//	return 0;
-//}
-
-//void Send_FLASH_Buffer(uint32_t Addr,uint8_t Data)
-//{
-//	uint8_t Status;
-//  Status=Erase_Sector(Addr);
-//	if()
-
-//}
-//void Read_Flash_Data(uint32_t Addr,uint8_t *Buff,uint8_t Size)
-//{
-//	uint8_t ReadData=0x03;
-//	uint8_t Dummy=0xFF;
-//	HAL_GPIO_WritePin(GPIOG,GPIO_PIN_6,GPIO_PIN_RESET);
-//	
-//	uint8_t addr[3];
-//	addr[0] = (Addr >> 16) & 0xFF;
-//	addr[1] = (Addr >> 8)  & 0xFF;
-//	addr[2] = (Addr >> 0)  & 0xFF;
-
-//	 // 1. 发送读命令
-//    HAL_SPI_Transmit(&hspi1, &ReadData, 1, HAL_MAX_DELAY);
-
-//    // 2. 发送24位地址
-//    HAL_SPI_Transmit(&hspi1, addr, 3, HAL_MAX_DELAY);
-//	
-//	// 3. 连续读数据
-//    for (uint16_t i = 0; i < Size; i++)
-//    {
-//        HAL_SPI_TransmitReceive(&hspi1, &Dummy, &Buff[i], 1, HAL_MAX_DELAY);
-//    }
-
-//		
-//	HAL_GPIO_WritePin(GPIOG,GPIO_PIN_6,GPIO_PIN_SET);
-//}
-
 typedef struct
 {
 //    uint32_t magic;
@@ -224,7 +117,7 @@ void JumpToApplication(void)
         SCB->VTOR = APP_ADDRESS;
         __set_MSP(app_sp);
 
-        __enable_irq();   // 关键：把全局中断打开，再跳
+        __enable_irq();   // 关键：把全局中断打开
 
         pFunction app_entry = (pFunction)app_reset;
         app_entry();
@@ -259,17 +152,13 @@ void Upgrade_Mode(void)
 			HAL_UART_Transmit(&huart1,(uint8_t *)BOOT_Rx,strlen(BOOT_Rx),100);
 //		HAL_UART_Transmit(&huart1,Rx_Data_upgrade,16,100);
 //  HAL_UART_Transmit(&huart1,(uint8_t *)"\r\n",2,100);
+
+		SPI_FLASH_Transmit(Addr,Rx_Data_upgrade,16);
+		 Read_Flash_Data(Addr,Data_Test_Rx,16);
+     HAL_UART_Transmit(&huart1,Data_Test_Rx,16,HAL_MAX_DELAY);	
 		
 		upgrade_block_ready = 0;
 		upgrade_rx_busy = 1;
-		
-		Send_FLASH_Buffer(Addr,16,Rx_Data_upgrade);
-		
-
-			Send_FLASH_Buffer(Addr,16,Rx_Data_upgrade);
-		 Read_Flash_Data(Addr,Data_Test_Rx,16);
-   HAL_UART_Transmit(&huart1,Data_Test_Rx,16,HAL_MAX_DELAY);	
-				
 				
 		memset(Rx_Data_upgrade, 0, sizeof(Rx_Data_upgrade)); 
 		HAL_UART_Receive_IT(&huart1, Rx_Data_upgrade, 16);
@@ -299,8 +188,6 @@ void Boot_Wait(void)
 		}
 			 
 }
-
-
   
 
 /* USER CODE END 0 */
@@ -365,27 +252,14 @@ int main(void)
 		}
 		else
 			JumpToApplication();
-/**		
-//			uint8_t Data[4]={0};
-//  SPI_Read_JEDECID(Data);
-*/
-	
-/*
-    uint8_t Data[2]={1};
-		SPI_ReadReg(Data);
-		HAL_UART_Transmit(&huart1,&Data[1],1,HAL_MAX_DELAY);
-*/
 
-// uint8_t Data_Test_Tx[16]={5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
-// uint8_t Data_Test_Rx[16]={0};
-// uint32_t Addr=0xFFF000;
-// Erase_Sector(Addr);
-// 
-// Page_Program(Addr,Data_Test_Tx,16);
-// 
-// Read_Flash_Data(Addr,Data_Test_Rx,16);
-//		
-//HAL_UART_Transmit(&huart1,Data_Test_Rx,16,HAL_MAX_DELAY);	
+// uint8_t Buff[16]={5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
+// uint8_t Recv[16]={0};
+//  Erase_Sector(Addr);
+//	Page_Program(Addr,Buff,16);
+// Read_Flash_Data(Addr,Recv,16);
+// HAL_UART_Transmit(&huart1,Recv,16,HAL_MAX_DELAY);
+
 
   /* USER CODE END 2 */
 

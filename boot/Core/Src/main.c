@@ -113,7 +113,7 @@ void JumpToApplication(void)
         SCB->VTOR = APP_ADDRESS;
         __set_MSP(app_sp);
 
-        __enable_irq();   // 关键：把全局中断打开，再跳
+       // __enable_irq();   // 关键：把全局中断打开，再跳
 
         pFunction app_entry = (pFunction)app_reset;
         app_entry();

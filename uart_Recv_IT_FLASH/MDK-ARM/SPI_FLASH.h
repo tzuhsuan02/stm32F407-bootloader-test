@@ -10,8 +10,9 @@ void SPI_ReadReg(uint8_t *Reg1);
 void Write_Enable();
 uint8_t Erase_Sector(uint32_t Addr);
 void Read_Flash_Data(uint32_t Addr,uint8_t *Buff,uint8_t Size);
-uint8_t Page_Program(uint32_t Addr,uint8_t *Buff,uint16_t Size);
-uint8_t Send_FLASH_Buffer(uint32_t Addr,uint16_t Size,uint8_t *Buffer);
+uint8_t Page_Program(uint32_t Addr,uint8_t *Buff,uint32_t Size);
+uint8_t SPI_FLASH_Transmit(uint32_t Addr,uint8_t *Buff,uint32_t Size);
+//uint8_t Send_FLASH_Buffer(uint32_t Addr,uint32_t Size,uint8_t *Buffer);
 #endif
 
 

@@ -65,6 +65,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+//	  __enable_irq();   // 关键：把全局中断打开
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -86,7 +87,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-
+  __enable_irq();   // 关键：把全局中断打开
   /* USER CODE END 2 */
 
   /* Infinite loop */
