@@ -429,6 +429,16 @@
               <FileType>5</FileType>
               <FilePath>.\ProtocolFrame.h</FilePath>
             </File>
+            <File>
+              <FileName>FLASH_Transmit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FLASH_Transmit.c</FilePath>
+            </File>
+            <File>
+              <FileName>FLASH_Transmit.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\FLASH_Transmit.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

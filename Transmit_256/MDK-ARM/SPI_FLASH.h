@@ -11,7 +11,7 @@ void Write_Enable();
 uint8_t Erase_Sector(uint32_t Addr);
 void Read_Flash_Data(uint32_t Addr,uint8_t *Buff,uint16_t Size);
 uint8_t Page_Program(uint32_t Addr,uint8_t *Buff,uint32_t Size);
-uint8_t Sectors_Erase(uint32_t AddrR,uint32_t Size);
+uint8_t Sectors_Erase(uint32_t Addr,uint32_t Size);
 //uint8_t Send_FLASH_Buffer(uint32_t Addr,uint32_t Size,uint8_t *Buffer);
 #endif
 

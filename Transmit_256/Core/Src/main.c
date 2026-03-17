@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "SPI_FLASH.h"
 #include "ProtocolFrame.h"
+#include "FLASH_Transmit.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -71,7 +72,7 @@ static void MX_SPI1_Init(void);
 volatile 	uint32_t Last_Data;
 volatile	uint32_t Page_Num;
 volatile uint32_t Addr;
-volatile uint32_t Bin_Size=3640;
+volatile uint32_t Bin_Size;
 
 uint8_t FLASH_Data[256];
 uint8_t Frame_Val;
@@ -84,6 +85,7 @@ uint8_t NACK=0x15;
 		char DataRx[32]={0};
 static volatile  uint8_t key_pressed=0;
 		
+		Firmware_Info firmware_info;
 		
 #define APP_ADDRESS  0x08008000U
 typedef void (*pFunction)(void);
@@ -99,16 +101,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 typedef struct
 {
-//    uint32_t magic;
-//    uint32_t upgrade_req;
-//    uint32_t trial_run;
-//    uint32_t confirm_ok;
-//    uint32_t active_app;
-//    uint32_t fw_size;
-//    uint32_t fw_crc;
- 	  uint32_t boot_mode;
-//	  uint32_t cmd;
-	   uint32_t upgrade_mode;
+ 	 uint32_t boot_mode;
+	 uint32_t upgrade_mode;
 } boot_flag;
 
 	boot_flag BootFlag={0};
@@ -142,8 +136,10 @@ void JumpToApplication(void)
 
 		//
 		uint8_t Rx_Data_upgrade[268] = {0};
+		uint8_t Rx_Data_First[268]={0};
     volatile uint8_t upgrade_block_ready = 0;
 		  volatile uint8_t upgrade_rx_busy =0; 
+		volatile uint8_t Upgrade_complete=0;
 		 	
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -182,33 +178,58 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 }		
-
-void calculate ()
+uint8_t calculate(uint8_t *rx_buff)
 {
-	uint8_t Status=1;
-	Status=Sectors_Erase(Addr,Bin_Size);
-	if(Status==0)
-	{
-		Page_Num=Bin_Size/256;
- Last_Data=Bin_Size%256;
-	}
-	else
-	{
-	HAL_UART_Transmit(&huart1,(uint8_t *)"Erase Failed",14,HAL_MAX_DELAY);
-	}
+    Bin_Size = Get_Bin_Size(rx_buff);
+    
+	      // 写标志区
+    Firmware_Info info;
+    info.bin_size = Bin_Size;
+    info.upgrade_flag = 1;
+    info.active_app = 0;
+    Write_Firmware_Info(0xFFE000, &info);
+	
+    uint8_t Status = Sectors_Erase(Addr, Bin_Size);
+    if(Status == 0)
+    {
+        Page_Num = Bin_Size / 256;
+        Last_Data = Bin_Size % 256;
+        return 0;
+    }
+    else
+    {
+        HAL_UART_Transmit(&huart1, (uint8_t*)"Erase Failed", 12, HAL_MAX_DELAY);
+        return 1;
+    }
 }
 
 void Upgrade_Mode(void)
 {
 	Addr = 0xFFF000;
-   calculate ();
-
+//   calculate ();
+	
 	    // 清空串口缓冲区
     __HAL_UART_FLUSH_DRREGISTER(&huart1);
-	
-	HAL_UART_Transmit(&huart1, (uint8_t*)"Ready\r\n", 7, 100);
-	
 	Frame_t *frame = (Frame_t *)Rx_Data_upgrade;
+
+	//接收第一条指令
+	 upgrade_block_ready = 0;
+    HAL_UART_Receive_IT(&huart1, Rx_Data_First, 268);  
+    
+    while(upgrade_block_ready == 0);
+    
+		if(Parse_Frame(Rx_Data_First) == 0)  // 先验证
+	{
+			if(calculate(Rx_Data_First) == 0)  // 再处理
+			{
+					HAL_UART_Transmit(&huart1, (uint8_t*)"Ready\r\n", 7, 100);
+			}
+	else
+    {
+     	HAL_UART_Transmit(&huart1, (uint8_t*)"Failed\r\n", 8, 100);
+    }
+   
+	}
     // 接收整页
     for(uint32_t i = 0; i < Page_Num; i++)
     {
@@ -216,13 +237,13 @@ void Upgrade_Mode(void)
 			
         HAL_UART_Receive_IT(&huart1, Rx_Data_upgrade, 268);
         
-        while(upgrade_block_ready == 0);  // 等待接收完成
+			while(upgrade_block_ready == 0);  // 等待接收完成,为1会跳出循环
         
 			Frame_Val=Parse_Frame(Rx_Data_upgrade);
 
 			if(Frame_Val==0)
 			{
-			Page_Program(Addr, &Rx_Data_upgrade[6], 256);
+			Page_Program(Addr, frame->data, 256);
 		  Addr += 256;
 		
 			HAL_UART_Transmit(&huart1,&ACK,1,HAL_MAX_DELAY);
@@ -232,29 +253,6 @@ void Upgrade_Mode(void)
 			HAL_UART_Transmit(&huart1,&NACK,1,HAL_MAX_DELAY);
 			}
 		}
-    
-//    // 接收最后不足256的部分
-//    if(Last_Data > 0)
-//    {
-//        upgrade_block_ready = 0;
-//        HAL_UART_Receive_IT(&huart1, Rx_Data_upgrade, Last_Data+12);
-//        
-//        while(upgrade_block_ready == 0);  // 等待接收完成
-//        
-//  		Frame_Val=Parse_Frame(Rx_Data_upgrade);
-//			
-//			if(Frame_Val==0)
-//			{	
-//			Page_Program(Addr, &Rx_Data_upgrade[6], Last_Data);
-//	
-//			HAL_UART_Transmit(&huart1,&ACK,1,HAL_MAX_DELAY);
-//			}
-//			else
-//			{
-//			HAL_UART_Transmit(&huart1,&NACK,1,HAL_MAX_DELAY);
-//			}
-//    }
-
 if(Last_Data > 0)
 {
     upgrade_block_ready = 0;
@@ -266,7 +264,7 @@ if(Last_Data > 0)
     
     if(Frame_Val == 0)
     {
-        Page_Program(Addr, &Rx_Data_upgrade[6], Last_Data);  // 只写有效数据
+        Page_Program(Addr, frame->data, Last_Data);  // 只写有效数据
         HAL_UART_Transmit(&huart1, &ACK, 1, HAL_MAX_DELAY);
     }
     else
@@ -277,6 +275,7 @@ if(Last_Data > 0)
     // 升级完成
     HAL_UART_Transmit(&huart1, (uint8_t*)"Upgrade Done\r\n", 14, 100);
     BootFlag.upgrade_mode = 0;
+		Upgrade_complete=1;
 }
 
 //void Upgrade_Mode(void)
@@ -359,12 +358,12 @@ void Boot_ProcessCmd(char *pDataRx)
 			{
 			HAL_UART_Transmit(&huart1,(uint8_t*)DataTx_upgrade,strlen(DataTx_upgrade),100);
 				
-						Rx_Flag_Cmd=0;
+			Rx_Flag_Cmd=0;
 			memset(DataRx,0,sizeof(DataRx));
 			RxCount=0;
 			BootFlag.upgrade_mode=1;
 			
-				HAL_UART_AbortReceive(&huart1);
+			HAL_UART_AbortReceive(&huart1);
 			
 			}
 			else
@@ -374,12 +373,13 @@ void Boot_ProcessCmd(char *pDataRx)
 			}
 
 }
+
+
 void Boot_Wait(void)
 	{
 		HAL_UART_Receive_IT(&huart1,&RxTemp,1);
 		HAL_UART_Transmit(&huart1,(uint8_t*)DataTx_BootMode,strlen(DataTx_BootMode),100);
 		HAL_UART_Transmit(&huart1,(uint8_t*)DataTx_Wait,strlen(DataTx_Wait),100);
-
 
 	 while(1)
 	 {
@@ -391,6 +391,12 @@ void Boot_Wait(void)
 		 if(BootFlag.upgrade_mode==1)
 			{
 				Upgrade_Mode();
+				
+				if(Upgrade_complete==1)
+				{
+				
+				
+				}
 			}
 			
 		else if(Rx_Flag_Cmd==1)
@@ -450,7 +456,14 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+		Firmware_Info info;
+   Read_Firmware_Info(FlAG_FLASH_ADDR, &info);
 
+   if(info.upgrade_flag == 1)
+   {
+    // 有新固件，搬运
+    Write_Internal_Flash();
+   }
 
     StarttTime=HAL_GetTick();
 		CurrentTime=HAL_GetTick();

@@ -5,6 +5,7 @@
 "boot1\stm32f4xx_hal_msp.o"
 "boot1\spi_flash.o"
 "boot1\protocolframe.o"
+"boot1\flash_transmit.o"
 "boot1\stm32f4xx_hal_spi.o"
 "boot1\stm32f4xx_hal_rcc.o"
 "boot1\stm32f4xx_hal_rcc_ex.o"
