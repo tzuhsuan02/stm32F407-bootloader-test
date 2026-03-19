@@ -25,6 +25,7 @@ typedef struct {
     uint32_t bin_size;      // 固件大小
     uint8_t upgrade_flag;  // 是否需要升级
     uint8_t active_app;     // APP 是否有效
+	
 } Firmware_Info;
 
 uint8_t Parse_Frame(uint8_t *rx_buf);

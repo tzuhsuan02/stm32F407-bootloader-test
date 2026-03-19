@@ -205,7 +205,7 @@ uint8_t calculate(uint8_t *rx_buff)
 
 void Upgrade_Mode(void)
 {
-	Addr = 0xFFF000;
+	Addr = W25Q_FLASH_Addr;
 //   calculate ();
 	
 	    // 清空串口缓冲区

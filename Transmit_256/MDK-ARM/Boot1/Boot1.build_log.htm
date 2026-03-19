@@ -27,16 +27,29 @@ Project File Date:  03/17/2026
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'Boot1'
+compiling ProtocolFrame.c...
+SPI_FLASH.h(10): warning:  #1295-D: Deprecated declaration Write_Enable - give arg types
+  void Write_Enable();
+ProtocolFrame.c(9): warning:  #177-D: variable "i"  was declared but never referenced
+      unsigned char i = 0, j = 0;
+ProtocolFrame.c(66): warning:  #177-D: variable "Cmd"  was declared but never referenced
+  	  uint16_t Cmd=(frame->cmd[0] << 8) | frame->cmd[1];
+ProtocolFrame.c: 3 warnings, 0 errors
+compiling A_B.c...
 compiling main.c...
 ..\MDK-ARM\SPI_FLASH.h(10): warning:  #1295-D: Deprecated declaration Write_Enable - give arg types
   void Write_Enable();
 ../Core/Src/main.c(51): warning:  #177-D: variable "BOOT_Rx"  was declared but never referenced
   static char BOOT_Rx[]="\r\nBOOT_Rx:\r\n";
 ../Core/Src/main.c: 2 warnings, 0 errors
+compiling FLASH_Transmit.c...
+SPI_FLASH.h(10): warning:  #1295-D: Deprecated declaration Write_Enable - give arg types
+  void Write_Enable();
+FLASH_Transmit.c: 1 warning, 0 errors
 linking...
 Program Size: Code=10222 RO-data=458 RW-data=184 ZI-data=2360  
 FromELF: creating hex file...
-"Boot1\Boot1.axf" - 0 Error(s), 2 Warning(s).
+"Boot1\Boot1.axf" - 0 Error(s), 6 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -60,7 +73,7 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.6.0
       Include file:  CMSIS/Core/Include/tz_context.h
-Build Time Elapsed:  00:00:02
+Build Time Elapsed:  00:00:03
 </pre>
 </body>
 </html>
