@@ -502,7 +502,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
- Init_Firmware_Info();
+ //Init_Firmware_Info();
 		Firmware_Info info;
    Read_Firmware_Info(FlAG_FLASH_ADDR, &info);
 

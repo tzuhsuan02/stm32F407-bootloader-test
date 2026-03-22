@@ -26,6 +26,7 @@ typedef struct {
     uint8_t upgrade_flag;  // 是否需要升级
     uint8_t active_app;     // 现在运行的是A/B区
 		uint8_t valid_app;    //APP 是否有效
+	  uint8_t reserved;
 	
 } Firmware_Info;
 
