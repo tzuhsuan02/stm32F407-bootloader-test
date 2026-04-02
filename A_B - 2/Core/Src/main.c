@@ -248,7 +248,7 @@ void Upgrade_Mode(void)
 	{
 			if(calculate(Rx_Data_First) == 0)  // 再处理
 			{
-					HAL_UART_Transmit(&huart1, (uint8_t*)"Ready\r\n", 7, 100);
+					HAL_UART_Transmit(&huart1,&ACK,1,HAL_MAX_DELAY);
 			}
 	else
     {
